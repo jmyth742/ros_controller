@@ -12,7 +12,9 @@
   <!-- Start ackermann_steering_bot -->
   <node name="ackermann_steering_controller_ackermann_steering_bot"
         pkg="ackermann_steering_controller"
-        type="ackermann_steering_controller_ackermann_steering_bot"/>
+        type="ackermann_steering_controller_ackermann_steering_bot">
+	<remap from="/ackermann_steering_bot_controller/cmd_vel" to="/cmd_vel"/>
+  </node>
 
   <!-- Spawn controller -->
   <node name="controller_spawner"

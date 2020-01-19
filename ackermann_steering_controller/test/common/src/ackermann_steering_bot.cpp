@@ -31,31 +31,35 @@
 
 // ROS
 #include <ros/ros.h>
+#include <ros/console.h>
 
 // ros_control
 #include <controller_manager/controller_manager.h>
 
 #include "./../include/ackermann_steering_bot.h"
 
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "ackermann_steering_bot");
   ros::NodeHandle nh;
+  ROS_WARN_STREAM("\n\n ros node ackermann steering bot \n\n");
 
   AckermannSteeringBot robot;
-  ROS_WARN_STREAM("period: " << robot.getPeriod().toSec());
+  //ROS_WARN_STREAM("period: " << robot.getPeriod().toSec());
   controller_manager::ControllerManager cm(&robot, nh);
-
-  ros::Rate rate(1.0 / robot.getPeriod().toSec());
-  ros::AsyncSpinner spinner(1);
+  //ros::Rate rate(1.0 / robot.getPeriod().toSec());
+  ros::Rate rate(1.0 / 50.0);
+  ros::AsyncSpinner spinner(2);
   spinner.start();
   while(ros::ok())
   {
-    ROS_WARN_STREAM("period: " << robot.getPeriod().toSec());
+    //ROS_WARN_STREAM("period: " << robot.getPeriod().toSec());
     robot.read();
     cm.update(robot.getTime(), robot.getPeriod());
     robot.write();
     rate.sleep();
+
   }
   spinner.stop();
 

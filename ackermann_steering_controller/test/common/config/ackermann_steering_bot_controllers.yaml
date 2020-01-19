@@ -11,3 +11,14 @@ ackermann_steering_bot_controller:
   #wheel_separation_h : 0.4
   #wheel_radius : 0.11
   wheel_separation_h_multiplier: 0.257 # calibration parameter for odometory, needed for test.
+
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 10  
+
+  # Position Controllers ---------------------------------------
+  joint_position_controller:
+    type: position_controllers/JointPositionController
+    joint: Joint
+    pid: {p: 100.0, i: 0.01, d: 10.0}

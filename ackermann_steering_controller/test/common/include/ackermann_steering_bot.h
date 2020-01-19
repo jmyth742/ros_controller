@@ -61,6 +61,7 @@ public:
   , stop_srv_(nh_.advertiseService("stop", &AckermannSteeringBot::stopCallback, this))
   , ns_("ackermann_steering_bot_hw_sim/")
   {
+    ROS_INFO("initalised the ackermann bot");
     // Intialize raw data
     this->cleanUp();
     this->getJointNames(nh_);
@@ -88,6 +89,8 @@ public:
     {
       virtual_rear_wheel_jnt_vel_cmd_[i] = rear_wheel_jnt_vel_cmd_;
       os << virtual_rear_wheel_jnt_vel_cmd_[i] << ", ";
+      ROS_WARN_STREAM(" convert to each joint velocity");
+      ROS_WARN_STREAM(virtual_rear_wheel_jnt_vel_cmd_[i]);
     }
 
     //-- ackerman link
@@ -95,6 +98,9 @@ public:
     const double w = wheel_separation_w_;
     virtual_front_steer_jnt_pos_cmd_[INDEX_RIGHT] = atan2(2*h*tan(front_steer_jnt_pos_cmd_), 2*h + w/2.0*tan(front_steer_jnt_pos_cmd_));
     virtual_front_steer_jnt_pos_cmd_[INDEX_LEFT] = atan2(2*h*tan(front_steer_jnt_pos_cmd_), 2*h - w/2.0*tan(front_steer_jnt_pos_cmd_));
+    ROS_WARN_STREAM("virtual_front_steer_jnt_pos_cmd_");
+    ROS_WARN_STREAM(virtual_front_steer_jnt_pos_cmd_[INDEX_RIGHT]);
+    ROS_WARN_STREAM(virtual_front_steer_jnt_pos_cmd_[INDEX_LEFT]);
 
     for (unsigned int i = 0; i < virtual_front_steer_jnt_pos_cmd_.size(); i++)
     {
@@ -102,18 +108,23 @@ public:
     }
 
     if (rear_wheel_jnt_vel_cmd_ != 0.0 || front_steer_jnt_pos_cmd_ != 0.0)
-      ROS_INFO_STREAM("Commands for joints: " << os.str());
+      ROS_WARN_STREAM("Commands for joints: " << os.str());
 
   }
 
   void write()
   {
     std::ostringstream os;
+    ROS_WARN_STREAM("In the write function");
+
     if (running_)
     {
       // wheels
       rear_wheel_jnt_pos_ += rear_wheel_jnt_vel_*getPeriod().toSec();
+	ROS_WARN_STREAM("pos then velocity");
+	ROS_WARN_STREAM(rear_wheel_jnt_pos_);
       rear_wheel_jnt_vel_ = rear_wheel_jnt_vel_cmd_;
+	ROS_WARN_STREAM(rear_wheel_jnt_vel_);
       for (unsigned int i = 0; i < virtual_rear_wheel_jnt_vel_cmd_.size(); i++)
       {
         // Note that pos_[i] will be NaN for one more cycle after we start(),

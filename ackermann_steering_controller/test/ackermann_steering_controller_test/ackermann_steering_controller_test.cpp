@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "ackermann_steering_controller_test");
-
+  ROS_INFO("HELLO WORLD \n\n\n\n\n");
   ros::AsyncSpinner spinner(1);
   spinner.start();
   //ros::Duration(0.5).sleep();

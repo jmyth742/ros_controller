@@ -7,7 +7,8 @@
         pkg="ackermann_steering_controller"
         type="ackermann_steering_controller_test"
         time-limit="80.0">
-    <remap from="cmd_vel" to="ackermann_steering_bot_controller/cmd_vel" />
-    <remap from="odom" to="ackermann_steering_bot_controller/odom" />
   </test>
 </launch>
+<!--    <remap from="cmd_vel" to="ackermann_steering_bot_controller/cmd_vel" />
+    <remap from="odom" to="ackermann_steering_bot_controller/odom" />
+-->
