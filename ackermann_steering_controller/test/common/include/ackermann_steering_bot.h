@@ -59,7 +59,7 @@ public:
   : running_(true)
   , start_srv_(nh_.advertiseService("start", &AckermannSteeringBot::startCallback, this))
   , stop_srv_(nh_.advertiseService("stop", &AckermannSteeringBot::stopCallback, this))
-  , ns_("ackermann_steering_bot_hw_sim/")
+ // , ns_("ackermann_steering_bot_hw_sim/")
   {
     ROS_INFO("initalised the ackermann bot");
     // Intialize raw data
@@ -78,60 +78,78 @@ public:
 
   void read()
   {
+    /*std::ostringstream os_read;
     std::ostringstream os;
-    // directly get from controller
-    os << rear_wheel_jnt_vel_cmd_ << ", ";
-    os << front_steer_jnt_pos_cmd_ << ", ";
+    std::ostringstream os1;
 
-    // convert to each joint velocity
-    //-- differential drive
-    for (unsigned int i = 0; i < virtual_rear_wheel_jnt_vel_cmd_.size(); i++)
-    {
-      virtual_rear_wheel_jnt_vel_cmd_[i] = rear_wheel_jnt_vel_cmd_;
-      os << virtual_rear_wheel_jnt_vel_cmd_[i] << ", ";
-      ROS_WARN_STREAM(" convert to each joint velocity");
-      ROS_WARN_STREAM(virtual_rear_wheel_jnt_vel_cmd_[i]);
-    }
+    // directly get from controller
+    ROS_WARN_STREAM("READ -- DIRECT FROM CONTROLLER rear_wheel_jnt_vel_cmd_ " << rear_wheel_jnt_vel_cmd_);
+    ROS_WARN_STREAM("READ -- DIRECT FROM CONTROLLER front_steer_jnt_pos_cmd_ " << front_steer_jnt_pos_cmd_);
+
 
     //-- ackerman link
     const double h = wheel_separation_h_;
     const double w = wheel_separation_w_;
     virtual_front_steer_jnt_pos_cmd_[INDEX_RIGHT] = atan2(2*h*tan(front_steer_jnt_pos_cmd_), 2*h + w/2.0*tan(front_steer_jnt_pos_cmd_));
     virtual_front_steer_jnt_pos_cmd_[INDEX_LEFT] = atan2(2*h*tan(front_steer_jnt_pos_cmd_), 2*h - w/2.0*tan(front_steer_jnt_pos_cmd_));
-    ROS_WARN_STREAM("virtual_front_steer_jnt_pos_cmd_");
-    ROS_WARN_STREAM(virtual_front_steer_jnt_pos_cmd_[INDEX_RIGHT]);
-    ROS_WARN_STREAM(virtual_front_steer_jnt_pos_cmd_[INDEX_LEFT]);
+
 
     for (unsigned int i = 0; i < virtual_front_steer_jnt_pos_cmd_.size(); i++)
     {
-      os << virtual_front_steer_jnt_pos_cmd_[i] << ", ";
+      os << "READ -- virtual_front_steer_jnt_pos_cmd_ BOTH" << virtual_front_steer_jnt_pos_cmd_[i] << ", ";
     }
 
-    if (rear_wheel_jnt_vel_cmd_ != 0.0 || front_steer_jnt_pos_cmd_ != 0.0)
-      ROS_WARN_STREAM("Commands for joints: " << os.str());
+    //if (rear_wheel_jnt_vel_cmd_ != 0.0 || front_steer_jnt_pos_cmd_ != 0.0)
+      //ROS_WARN_STREAM("Commands for joints: " << os.str());
+*/
 
+     std::ostringstream os;
+     // directly get from controller
+     os << rear_wheel_jnt_vel_cmd_ << ", ";
+     os << front_steer_jnt_pos_cmd_ << ", ";
+ 
+     // convert to each joint velocity
+     //-- differential drive
+     for (unsigned int i = 0; i < virtual_rear_wheel_jnt_vel_cmd_.size(); i++)
+     {
+       virtual_rear_wheel_jnt_vel_cmd_[i] = rear_wheel_jnt_vel_cmd_;
+       os << virtual_rear_wheel_jnt_vel_cmd_[i] << ", ";
+     }
+ 
+     //-- ackerman link
+     const double h = wheel_separation_h_;
+     const double w = wheel_separation_w_;
+     virtual_front_steer_jnt_pos_cmd_[INDEX_RIGHT] = atan2(2*h*tan(front_steer_jnt_pos_cmd_), 2*h + w/2.0*tan(front_steer_jnt_pos_cmd_));
+     virtual_front_steer_jnt_pos_cmd_[INDEX_LEFT] = atan2(2*h*tan(front_steer_jnt_pos_cmd_), 2*h - w/2.0*tan(front_steer_jnt_pos_cmd_));
+ 
+     for (unsigned int i = 0; i < virtual_front_steer_jnt_pos_cmd_.size(); i++)
+     {
+       os << virtual_front_steer_jnt_pos_cmd_[i] << ", ";
+     }
+ 
+     if (rear_wheel_jnt_vel_cmd_ != 0.0 || front_steer_jnt_pos_cmd_ != 0.0)
+       ROS_INFO_STREAM("Commands for joints: " << os.str());
   }
 
   void write()
   {
     std::ostringstream os;
-    ROS_WARN_STREAM("In the write function");
+    std::ostringstream os_pos;
+
 
     if (running_)
     {
       // wheels
-      rear_wheel_jnt_pos_ += rear_wheel_jnt_vel_*getPeriod().toSec();
-	ROS_WARN_STREAM("pos then velocity");
-	ROS_WARN_STREAM(rear_wheel_jnt_pos_);
+      //rear_wheel_jnt_pos_ += rear_wheel_jnt_vel_*getPeriod().toSec();
       rear_wheel_jnt_vel_ = rear_wheel_jnt_vel_cmd_;
-	ROS_WARN_STREAM(rear_wheel_jnt_vel_);
       for (unsigned int i = 0; i < virtual_rear_wheel_jnt_vel_cmd_.size(); i++)
       {
         // Note that pos_[i] will be NaN for one more cycle after we start(),
         // but that is consistent with the knowledge we have about the state
         // of the robot.
-        virtual_rear_wheel_jnt_pos_[i] += virtual_rear_wheel_jnt_vel_[i]*getPeriod().toSec();
+        //virtual_rear_wheel_jnt_pos_[i] += virtual_rear_wheel_jnt_vel_[i]*getPeriod().toSec();
         virtual_rear_wheel_jnt_vel_[i] = virtual_rear_wheel_jnt_vel_cmd_[i];
+	ROS_WARN_STREAM("WRITE -- virtual_rear_wheel_jnt_vel_" <<  virtual_rear_wheel_jnt_vel_[i]);
       }
 
       // steers
@@ -139,23 +157,26 @@ public:
       for (unsigned int i = 0; i < virtual_front_steer_jnt_pos_cmd_.size(); i++)
       {
         virtual_front_steer_jnt_pos_[i] = virtual_front_steer_jnt_pos_cmd_[i];
+	ROS_WARN_STREAM("WRITE -- virtual_front_steer_jnt_pos_" << virtual_front_steer_jnt_pos_[i]);
       }
 
       // directly get from controller
       os << rear_wheel_jnt_vel_cmd_ << ", ";
-      os << front_steer_jnt_pos_cmd_ << ", ";
+      ROS_WARN_STREAM("WRITE -- rear_wheel_jnt_vel_cmd_ " << os.str());
+      os_pos << "WRITE --  front_steer_jnt_pos_cmd_ - " << front_steer_jnt_pos_cmd_ << ", ";
 
       // convert to each joint velocity
       //-- differential drive
-      for (unsigned int i = 0; i < virtual_rear_wheel_jnt_pos_.size(); i++)
+      /*for (unsigned int i = 0; i < virtual_rear_wheel_jnt_pos_.size(); i++)
       {
-          os << virtual_rear_wheel_jnt_pos_[i] << ", ";
-      }
+          //os << virtual_rear_wheel_jnt_pos_[i] << ", ";
+      }*/
 
       //-- ackerman link
       for (unsigned int i = 0; i < virtual_front_steer_jnt_pos_.size(); i++)
       {
-          os << virtual_front_steer_jnt_pos_[i] << ", ";
+          os_pos << virtual_front_steer_jnt_pos_[i] << ", " ;
+	  ROS_WARN_STREAM("WRITE -- virtual_front_steer_jnt_pos_" << os_pos.str());
       }
     }
     else

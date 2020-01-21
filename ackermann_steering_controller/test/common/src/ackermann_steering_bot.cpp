@@ -48,17 +48,21 @@ int main(int argc, char **argv)
   AckermannSteeringBot robot;
   //ROS_WARN_STREAM("period: " << robot.getPeriod().toSec());
   controller_manager::ControllerManager cm(&robot, nh);
-  //ros::Rate rate(1.0 / robot.getPeriod().toSec());
-  ros::Rate rate(1.0 / 50.0);
-  ros::AsyncSpinner spinner(2);
+  ros::Rate rate(1.0 / robot.getPeriod().toSec());
+  ros::Time ts = ros::Time::now();
+  //ros::Rate rate(1.0 / 150.0);
+  ros::AsyncSpinner spinner(0);
   spinner.start();
   while(ros::ok())
   {
-    //ROS_WARN_STREAM("period: " << robot.getPeriod().toSec());
+    ros::Duration d = ros::Time::now() - ts;
+    ts = ros::Time::now();
     robot.read();
-    cm.update(robot.getTime(), robot.getPeriod());
+    cm.update(ts,d);
+    //cm.update(robot.getTime(), robot.getPeriod());
     robot.write();
     rate.sleep();
+    
 
   }
   spinner.stop();

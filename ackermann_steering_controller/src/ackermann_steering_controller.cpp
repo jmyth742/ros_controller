@@ -106,18 +106,18 @@ static bool getWheelRadius(const urdf::LinkConstSharedPtr& wheel_link, double& w
 namespace ackermann_steering_controller{
 
   AckermannSteeringController::AckermannSteeringController()
-    : open_loop_(false)
+    : open_loop_(true)
     , command_struct_()
-    , wheel_separation_h_(0.0)
-    , wheel_radius_(0.0)
+    , wheel_separation_h_(5.0)
+    , wheel_radius_(5.0)
     , wheel_separation_h_multiplier_(1.0)
     , wheel_radius_multiplier_(1.0)
     , steer_pos_multiplier_(1.0)
     , cmd_vel_timeout_(0.5)
-    , allow_multiple_cmd_vel_publishers_(true)
+    , allow_multiple_cmd_vel_publishers_(false)
     , base_frame_id_("base_link")
     , odom_frame_id_("odom")
-    , enable_odom_tf_(true)
+    , enable_odom_tf_(false)
     , wheel_joints_size_(0)
   {
   }
@@ -129,11 +129,11 @@ namespace ackermann_steering_controller{
     typedef hardware_interface::VelocityJointInterface VelIface;
     typedef hardware_interface::PositionJointInterface PosIface;
     typedef hardware_interface::JointStateInterface StateIface;
-	ROS_WARN_STREAM("IN THE INIT FUNCTION");
-    // get multiple types of hardware_interface
+    //ROS_WARN_STREAM("IN THE INIT FUNCTION");
+    // get multiple types of hardwar e_interface
     VelIface *vel_joint_if = robot_hw->get<VelIface>(); // vel for wheels
     PosIface *pos_joint_if = robot_hw->get<PosIface>(); // pos for steers
-
+    StateIface *state_if = robot_hw->get<StateIface>(); //state for joint
     const std::string complete_ns = controller_nh.getNamespace();
 
     std::size_t id = complete_ns.find_last_of("/");
@@ -241,6 +241,7 @@ namespace ackermann_steering_controller{
 
     //-- rear wheel
     //---- handles need to be previously registerd in ackermann_steering_test.cpp
+
     ROS_INFO_STREAM_NAMED(name_,
                           "Adding the rear wheel with joint name: " << rear_wheel_name);
     rear_wheel_joint_ = vel_joint_if->getHandle(rear_wheel_name); // throws on failure
@@ -252,14 +253,14 @@ namespace ackermann_steering_controller{
                           "Adding the subscriber: cmd_vel");
     sub_command_ = controller_nh.subscribe("cmd_vel", 1, &AckermannSteeringController::cmdVelCallback, this);
     ROS_INFO_STREAM_NAMED(name_, "Finished controller initialization");
-
+    ROS_WARN_STREAM("init success!");
     return true;
   }
 
   void AckermannSteeringController::update(const ros::Time& time, const ros::Duration& period)
   {
-     	ROS_WARN_STREAM("IN THE UPDATE FUNCTION");
-	ROS_WARN_STREAM(open_loop_);
+     	//ROS_WARN_STREAM("IN THE UPDATE FUNCTION");
+	//ROS_WARN_STREAM(open_loop_);
 
     // COMPUTE AND PUBLISH ODOMETRY
     if (open_loop_)
@@ -269,11 +270,11 @@ namespace ackermann_steering_controller{
     else
     {
       double wheel_pos  = rear_wheel_joint_.getPosition();
-      ROS_WARN_STREAM("wheel pos");
-      ROS_WARN_STREAM(wheel_pos);
+      //ROS_WARN_STREAM("wheel pos");
+      //ROS_WARN_STREAM(wheel_pos);
       double steer_pos = front_steer_joint_.getPosition();
-      ROS_WARN_STREAM("steer pos");
-      ROS_WARN_STREAM(steer_pos);
+      //ROS_WARN_STREAM("steer pos");
+      //ROS_WARN_STREAM(steer_pos);
 
       if (std::isnan(wheel_pos) || std::isnan(steer_pos))
         return;
@@ -323,6 +324,7 @@ namespace ackermann_steering_controller{
     // Brake if cmd_vel has timeout:
     if (dt > cmd_vel_timeout_)
     {
+      //ROS_WARN_STREAM("cmd_vel timed out");
       curr_cmd.lin = 0.0;
       curr_cmd.ang = 0.0;
     }
@@ -333,23 +335,25 @@ namespace ackermann_steering_controller{
     limiter_lin_.limit(curr_cmd.lin, last0_cmd_.lin, last1_cmd_.lin, cmd_dt);
     limiter_ang_.limit(curr_cmd.ang, last0_cmd_.ang, last1_cmd_.ang, cmd_dt);
 
+    ROS_INFO_STREAM_NAMED(name_,"curr cmd lin, last0 cmd lin, last1 cmd lin, then the angs");
+    ROS_INFO_STREAM_NAMED(name_,curr_cmd.lin);
+    ROS_INFO_STREAM_NAMED(name_,last0_cmd_.lin);
+    ROS_INFO_STREAM_NAMED(name_,last1_cmd_.lin);
+    ROS_INFO_STREAM_NAMED(name_,curr_cmd.ang);
+    ROS_INFO_STREAM_NAMED(name_,last0_cmd_.ang);
+    ROS_INFO_STREAM_NAMED(name_,last1_cmd_.ang);
+    ROS_INFO_STREAM_NAMED(name_,"end output");
+
     last1_cmd_ = last0_cmd_;
     last0_cmd_ = curr_cmd;
-    ROS_WARN_STREAM("\nlast1_cmd linear");
-    ROS_WARN_STREAM(last1_cmd_.lin);
-
-    ROS_WARN_STREAM("\n last1_cmd_ angular");
-    ROS_WARN_STREAM(last1_cmd_.ang);
 
     // Set Command
+    ROS_INFO_STREAM_NAMED(name_,"CHECK");
+    ROS_INFO_STREAM_NAMED(name_,curr_cmd.lin);
+    ROS_INFO_STREAM_NAMED(name_,wheel_radius_);
     const double wheel_vel = curr_cmd.lin/wheel_radius_; // omega = linear_vel / radius
     rear_wheel_joint_.setCommand(wheel_vel);
     front_steer_joint_.setCommand(curr_cmd.ang);
-    ROS_WARN_STREAM("post limitations");
-    ROS_WARN_STREAM("curr_cmd.lin");
-    ROS_WARN_STREAM(curr_cmd.lin);
-    ROS_WARN_STREAM("curr_cmd.ang");
-    ROS_WARN_STREAM(curr_cmd.ang);
 
   }
 
@@ -379,7 +383,6 @@ namespace ackermann_steering_controller{
 
   void AckermannSteeringController::cmdVelCallback(const geometry_msgs::Twist& command)
   {
-	ROS_WARN_STREAM("inside the callback for cmd_vel");
     if (isRunning())
     {
       // check that we don't have multiple publishers on the command topic
@@ -395,7 +398,7 @@ namespace ackermann_steering_controller{
       command_struct_.lin   = command.linear.x;
       command_struct_.stamp = ros::Time::now();
       command_.writeFromNonRT (command_struct_);
-      ROS_WARN_STREAM(command_struct_.lin);
+      //ROS_WARN_STREAM(command_struct_.lin);
       ROS_DEBUG_STREAM_NAMED(name_,
                              "Added values to command. "
                              << "Ang: "   << command_struct_.ang << ", "
