@@ -40,7 +40,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <tf/transform_datatypes.h>
 #include <urdf_parser/urdf_parser.h>
-
+#include <string.h>
 #include <ackermann_steering_controller/ackermann_steering_controller.h>
 
 static double euclideanOfVectors(const urdf::Vector3& vec1, const urdf::Vector3& vec2)
@@ -122,6 +122,7 @@ namespace ackermann_steering_controller{
   {
   }
 
+  typedef ackermann_msgs::AckermannDrive::ConstPtr AckermannMsgPtr;
   bool AckermannSteeringController::init(hardware_interface::RobotHW* robot_hw,
                                    ros::NodeHandle& root_nh,
                                    ros::NodeHandle& controller_nh)
@@ -129,6 +130,10 @@ namespace ackermann_steering_controller{
     typedef hardware_interface::VelocityJointInterface VelIface;
     typedef hardware_interface::PositionJointInterface PosIface;
     typedef hardware_interface::JointStateInterface StateIface;
+
+    ackermann_publisher = controller_nh.advertise<ackermann_msgs::AckermannDrive>(ack_topic_name,10,false);
+
+
     //ROS_WARN_STREAM("IN THE INIT FUNCTION");
     // get multiple types of hardwar e_interface
     VelIface *vel_joint_if = robot_hw->get<VelIface>(); // vel for wheels
@@ -259,9 +264,6 @@ namespace ackermann_steering_controller{
 
   void AckermannSteeringController::update(const ros::Time& time, const ros::Duration& period)
   {
-     	//ROS_WARN_STREAM("IN THE UPDATE FUNCTION");
-	//ROS_WARN_STREAM(open_loop_);
-
     // COMPUTE AND PUBLISH ODOMETRY
     if (open_loop_)
     {
@@ -270,11 +272,8 @@ namespace ackermann_steering_controller{
     else
     {
       double wheel_pos  = rear_wheel_joint_.getPosition();
-      //ROS_WARN_STREAM("wheel pos");
-      //ROS_WARN_STREAM(wheel_pos);
       double steer_pos = front_steer_joint_.getPosition();
-      //ROS_WARN_STREAM("steer pos");
-      //ROS_WARN_STREAM(steer_pos);
+      ROS_WARN_STREAM("wheel pos " << wheel_pos << " steer pos" << steer_pos);
 
       if (std::isnan(wheel_pos) || std::isnan(steer_pos))
         return;
@@ -335,23 +334,17 @@ namespace ackermann_steering_controller{
     limiter_lin_.limit(curr_cmd.lin, last0_cmd_.lin, last1_cmd_.lin, cmd_dt);
     limiter_ang_.limit(curr_cmd.ang, last0_cmd_.ang, last1_cmd_.ang, cmd_dt);
 
-    ROS_INFO_STREAM_NAMED(name_,"curr cmd lin, last0 cmd lin, last1 cmd lin, then the angs");
-    ROS_INFO_STREAM_NAMED(name_,curr_cmd.lin);
-    ROS_INFO_STREAM_NAMED(name_,last0_cmd_.lin);
-    ROS_INFO_STREAM_NAMED(name_,last1_cmd_.lin);
-    ROS_INFO_STREAM_NAMED(name_,curr_cmd.ang);
-    ROS_INFO_STREAM_NAMED(name_,last0_cmd_.ang);
-    ROS_INFO_STREAM_NAMED(name_,last1_cmd_.ang);
-    ROS_INFO_STREAM_NAMED(name_,"end output");
 
     last1_cmd_ = last0_cmd_;
     last0_cmd_ = curr_cmd;
 
     // Set Command
-    ROS_INFO_STREAM_NAMED(name_,"CHECK");
-    ROS_INFO_STREAM_NAMED(name_,curr_cmd.lin);
-    ROS_INFO_STREAM_NAMED(name_,wheel_radius_);
     const double wheel_vel = curr_cmd.lin/wheel_radius_; // omega = linear_vel / radius
+    drive_output_unstamped.speed = curr_cmd.lin;
+    drive_output_unstamped.steering_angle = curr_cmd.ang;
+    ackermann_publisher.publish(drive_output_unstamped);
+    //pos_publisher.publish(ang);
+    
     rear_wheel_joint_.setCommand(wheel_vel);
     front_steer_joint_.setCommand(curr_cmd.ang);
 

@@ -46,6 +46,9 @@
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
 #include <tf/tfMessage.h>
+#include "std_msgs/String.h"
+#include "std_msgs/Float32.h"
+#include "ackermann_msgs/AckermannDrive.h"
 
 namespace ackermann_steering_controller{
 
@@ -120,6 +123,16 @@ namespace ackermann_steering_controller{
     realtime_tools::RealtimeBuffer<Commands> command_;
     Commands command_struct_;
     ros::Subscriber sub_command_;
+
+
+    ros::Publisher ackermann_publisher;
+
+    std::string ack_topic_name = "ackermann_cmd";
+    ackermann_msgs::AckermannDrive drive_output_unstamped;
+
+
+
+
 
     /// Odometry related:
     std::shared_ptr<realtime_tools::RealtimePublisher<nav_msgs::Odometry> > odom_pub_;
